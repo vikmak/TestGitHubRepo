@@ -1,0 +1,287 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+	<bean id="WIPContentHandler"
+		class="com.tr.news.publishing.graphene.acquire.feeds.wip.WIPACH"
+		p:executor-ref="graphene-acquire-threadpool" p:checksumType="DIAMOND">
+		<property name="providerStoryIdHandler">
+			<util:constant
+				static-field="com.tr.news.publishing.graphene.acquire.StandardProviderStoryIdHandler.DIAMOND_CHECKSUM_ONLY" />
+		</property>
+		<property name="pubDateParser">
+			<util:constant
+				static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUB_DATE_PARSER" />
+		</property>
+		<property name="documentCleaners">
+			<list>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.text.HtmlEntityTranslationCleaner">
+					<property name="feedHandlerMapping">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.ENTITY_REPLACEMENTS" />
+					</property>
+				</bean>
+			</list>
+		</property>
+		<property name="splitterFactory">
+			<bean
+				class="com.tr.news.publishing.graphene.acquire.splitter.regex.RegexFeedPackageSplitterFactory">
+				<property name="headerPattern">
+					<util:constant
+						static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_HEADER_SPLIT" />
+				</property>
+				<property name="contentPattern">
+					<util:constant
+						static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_CONTENT_SPLIT" />
+				</property>
+				<property name="footerPattern">
+					<util:constant
+						static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_FOOTER_SPLIT" />
+				</property>
+			</bean>
+		</property>
+		<property name="fieldParsers">
+			<list>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.feeds.util.flatfile.field.RegexFlatFieldParser">
+					<constructor-arg name="pattern">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_HEADLINE" />
+					</constructor-arg>
+					<property name="fieldKey">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.HEADLINE" />
+					</property>
+					<property name="cleaner" ref="simpleTrimCleaner" />
+				</bean>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.feeds.util.flatfile.field.RegexFlatFieldParser">
+					<constructor-arg name="pattern">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_PUBDATA" />
+					</constructor-arg>
+					<property name="fieldKey">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUBDATA_STRING" />
+					</property>
+					<property name="cleaner" ref="simpleTrimCleaner" />
+				</bean>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.CopyFieldParser"
+					factory-method="create">
+					<constructor-arg name="inField">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUBDATA_STRING" />
+					</constructor-arg>
+					<property name="fieldKey">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.PUBDATE" />
+					</property>
+					<property name="cleaner">
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.text.ComboTextCleaner">
+							<property name="cleaners">
+								<list>
+									<bean
+										class="com.tr.news.publishing.graphene.acquire.text.RegexGroupSelectTextCleaner">
+										<constructor-arg name="pattern">
+											<util:constant
+												static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_EXTRACT_PUBDATE" />
+										</constructor-arg>
+										<constructor-arg name="group" value="1" />
+									</bean>
+									<ref bean="simpleTrimCleaner" />
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.CopyFieldParser"
+					factory-method="create">
+					<constructor-arg name="inField">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUBDATA_STRING" />
+					</constructor-arg>
+					<property name="fieldKey">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.PUBKEYS" />
+					</property>
+					<property name="cleaner">
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.text.ComboTextCleaner">
+							<property name="cleaners">
+								<list>
+									<bean
+										class="com.tr.news.publishing.graphene.acquire.text.RegexGroupSelectTextCleaner">
+										<constructor-arg name="pattern">
+											<util:constant
+												static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_EXTRACT_PUBKEY" />
+										</constructor-arg>
+										<constructor-arg name="group" value="1" />
+									</bean>
+									<ref bean="simpleTrimCleaner" />
+								</list>
+							</property>
+						</bean>
+					</property>
+				</bean>
+				<bean
+					class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.ConstantFieldParser"
+					factory-method="create">
+					<constructor-arg name="field">
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.ACTION" />
+					</constructor-arg>
+					<constructor-arg name="value" value="ADD" />
+				</bean>
+			</list>
+		</property>
+		<property name="documentVersionHandler">
+			<bean class="com.tr.news.publishing.graphene.acquire.feeds.wip.WIPDVH"
+				p:threadCount="1" p:executor-ref="graphene-acquire-threadpool">
+				<property name="fieldParsers">
+					<list>
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.CopyFieldParser"
+							factory-method="create">
+							<constructor-arg name="inField">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.PUB_LANGUAGE" />
+							</constructor-arg>
+							<property name="fieldKey">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.DOC_LANGUAGE" />
+							</property>
+							<property name="cleaner" ref="simpleTrimCleaner" />
+						</bean>
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.CopyFieldParser"
+							factory-method="create">
+							<constructor-arg name="inField">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUBDATA_STRING" />
+							</constructor-arg>
+							<property name="fieldKey">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUB_VOLUME" />
+							</property>
+							<property name="cleaner">
+								<bean
+									class="com.tr.news.publishing.graphene.acquire.text.ComboTextCleaner">
+									<property name="cleaners">
+										<list>
+											<bean
+												class="com.tr.news.publishing.graphene.acquire.text.RegexGroupSelectTextCleaner">
+												<constructor-arg name="pattern">
+													<util:constant
+														static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_PUB_VOLUME" />
+												</constructor-arg>
+												<constructor-arg name="group" value="1" />
+											</bean>
+											<ref bean="simpleTrimCleaner" />
+										</list>
+									</property>
+								</bean>
+							</property>
+						</bean>
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.CopyFieldParser"
+							factory-method="create">
+							<constructor-arg name="inField">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.PUBDATA_STRING" />
+							</constructor-arg>
+							<property name="fieldKey">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.PUB_INFO_PAGES" />
+							</property>
+							<property name="cleaner">
+								<bean
+									class="com.tr.news.publishing.graphene.acquire.text.ComboTextCleaner">
+									<property name="cleaners">
+										<list>
+											<bean
+												class="com.tr.news.publishing.graphene.acquire.text.RegexGroupSelectTextCleaner">
+												<constructor-arg name="pattern">
+													<util:constant
+														static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_PUB_PAGE" />
+												</constructor-arg>
+												<constructor-arg name="group" value="1" />
+											</bean>
+											<ref bean="simpleTrimCleaner" />
+										</list>
+									</property>
+								</bean>
+							</property>
+						</bean>
+						<!-- >EN -->
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.flatfile.field.RegexFlatFieldParser">
+							<constructor-arg name="pattern">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Constants.REGEX_BODY_TEXT" />
+							</constructor-arg>
+							<property name="fieldKey">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.BODY" />
+							</property>
+							<property name="cleaner">
+								<bean
+									class="com.tr.news.publishing.graphene.acquire.text.ComboTextCleaner">
+									<property name="cleaners">
+										<list>
+											<bean
+												class="com.tr.news.publishing.graphene.acquire.text.StringReplaceTextCleaner">
+												<constructor-arg name="find" value="&gt;EN" />
+												<constructor-arg name="replace" value="" />
+											</bean>
+											<ref bean="simpleTrimCleaner" />
+										</list>
+									</property>
+								</bean>
+							</property>
+						</bean>
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.ConstantFieldParser"
+							factory-method="create">
+							<constructor-arg name="field">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.DEFAULT_COPYRIGHT_HOLDER" />
+							</constructor-arg>
+							<constructor-arg name="value"
+								value="Inside Washington Publishers. All Rights Reserved." />
+						</bean>
+						<bean
+							class="com.tr.news.publishing.graphene.acquire.feeds.util.generic.ConstantFieldParser"
+							factory-method="create">
+							<constructor-arg name="field">
+								<util:constant
+									static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.FieldConstants.COPYRIGHT_FORMAT" />
+							</constructor-arg>
+							<constructor-arg name="value" value="Copyright (c) %s %s" />
+						</bean>
+
+					</list>
+				</property>
+				<property name="parsingContextProcessors">
+					<list>
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.processor.BasicParsingContextProcessors.COPYRIGHT_WITH_HOLDER_AND_OPTIONAL_YEAR" />
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.util.field.processor.BasicParsingContextProcessors.PUB_INFO_PAGES" />
+						<util:constant
+							static-field="com.tr.news.publishing.graphene.acquire.feeds.wip.Utils.VOLUME_PROCESSOR" />
+
+					</list>
+				</property>
+			</bean>
+		</property>
+	</bean>
+	<bean id="simpleTrimCleaner"
+		class="com.tr.news.publishing.graphene.acquire.text.SimpleTrimTextCleaner" />
+</beans>
